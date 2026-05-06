@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="id" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sound Master</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+  html, body { height: 100%; width: 100%; margin: 0; }
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: radial-gradient(ellipse at top, #1a0b3d 0%, #0a0520 60%, #000 100%);
+    color: #fff;
+    overflow-x: hidden;
+  }
+  .font-display { font-family: 'Bungee', cursive; letter-spacing: 0.02em; }
+
+  /* Animated stars background */
+  .stars::before, .stars::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(2px 2px at 20% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 60% 70%, #a78bfa, transparent),
+      radial-gradient(1.5px 1.5px at 80% 20%, #fbbf24, transparent),
+      radial-gradient(1px 1px at 40% 80%, #fff, transparent),
+      radial-gradient(2px 2px at 90% 50%, #f472b6, transparent),
+      radial-gradient(1px 1px at 10% 60%, #60a5fa, transparent);
+    background-size: 200% 200%;
+    pointer-events: none;
+    z-index: 0;
+    animation: twinkle 8s infinite;
+  }
+  .stars::after { animation-delay: -4s; opacity: 0.6; }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  /* Sound wave visualizer */
+  .wave-bar {
+    display: inline-block;
+    width: 6px;
+    margin: 0 2px;
+    background: linear-gradient(180deg, #f472b6, #a78bfa, #60a5fa);
+    border-radius: 3px;
+    transform-origin: center;
+  }
+  .wave-bar.playing {
+    animation: wave 0.6s ease-in-out infinite;
+  }
+  @keyframes wave {
+    0%, 100% { height: 8px; }
+    50% { height: 60px; }
+  }
+
+  /* Pulsing play button */
+  .play-btn-glow {
+    box-shadow: 0 0 0 0 rgba(244, 114, 182, 0.7);
+    animation: pulse-ring 2s infinite;
+  }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(244, 114, 182, 0.7); }
+    70% { box-shadow: 0 0 0 30px rgba(244, 114, 182, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(244, 114, 182, 0); }
+  }
+
+  .option-btn {
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+  }
+  .option-btn:hover:not(:disabled) {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(167, 139, 250, 0.4);
+  }
+  .option-btn.correct {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    border-color: #34d399 !important;
+    animation: correct-bounce 0.6s;
+  }
+  .option-btn.wrong {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    border-color: #f87171 !important;
+    animation: shake 0.5s;
+  }
+  @keyframes correct-bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  .fade-in { animation: fadeIn 0.5s ease-out; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .score-pop {
+    animation: scorePop 0.5s ease-out;
+  }
+  @keyframes scorePop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); color: #fbbf24; }
+    100% { transform: scale(1); }
+  }
+
+  .streak-fire {
+    animation: flicker 0.8s infinite;
+  }
+  @keyframes flicker {
+    0%, 100% { transform: scale(1) rotate(-2deg); }
+    50% { transform: scale(1.1) rotate(2deg); }
+  }
+
+  .confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    pointer-events: none;
+    z-index: 100;
+    animation: fall linear forwards;
+  }
+  @keyframes fall {
+    to { transform: translateY(110%) rotate(720deg); opacity: 0; }
+  }
+
+  .level-badge {
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(244, 114, 182, 0.2));
+    border: 1px solid rgba(167, 139, 250, 0.4);
+  }
+
+  .difficulty-card {
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+  }
+  .difficulty-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(167, 139, 250, 0.3);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+  ::-webkit-scrollbar-thumb { background: rgba(167, 139, 250, 0.5); border-radius: 4px; }
+</style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="stars h-full w-full">
+  <div class="relative z-10 w-full h-full overflow-auto">
+   <div class="max-w-4xl mx-auto px-4 py-6 md:py-10">
+    <!-- Header -->
+    <header class="text-center mb-8">
+     <div class="inline-flex items-center gap-3 mb-2">
+      <i data-lucide="music-4" class="w-8 h-8 text-pink-400"></i>
+      <h1 class="font-display text-3xl md:text-5xl bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">SOUND MASTER</h1><i data-lucide="music-4" class="w-8 h-8 text-blue-400"></i>
+     </div>
+     <p class="text-purple-300 text-sm md:text-base">Tebak bunyi, raih skor tertinggi! 🎵</p>
+    </header><!-- Start Screen -->
+    <section id="start-screen" class="fade-in">
+     <div class="text-center mb-8">
+      <div class="inline-block p-8 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 mb-6">
+       <i data-lucide="headphones" class="w-20 h-20 md:w-28 md:h-28 text-purple-300"></i>
+      </div>
+      <h2 class="font-display text-2xl md:text-3xl mb-3">Pilih Mode Permainan</h2>
+      <p class="text-purple-300/80 mb-8 max-w-md mx-auto">Dengarkan bunyinya dengan saksama, lalu tebak apa itu!</p>
+     </div>
+     <div class="grid md:grid-cols-3 gap-4 mb-6">
+      <button data-difficulty="easy" class="difficulty-card bg-gradient-to-br from-green-500/20 to-emerald-600/20 border-2 border-green-400/40 rounded-2xl p-6 text-left">
+       <div class="flex items-center justify-between mb-3">
+        <i data-lucide="leaf" class="w-8 h-8 text-green-300"></i> <span class="text-xs font-bold text-green-300 bg-green-500/20 px-2 py-1 rounded-full">MUDAH</span>
+       </div><h3 class="font-display text-xl mb-1">Pemula</h3><p class="text-sm text-green-100/70">Bunyi hewan &amp; alam</p><p class="text-xs text-green-300/60 mt-2">8 soal • 3 pilihan</p></button> <button data-difficulty="medium" class="difficulty-card bg-gradient-to-br from-yellow-500/20 to-orange-600/20 border-2 border-yellow-400/40 rounded-2xl p-6 text-left">
+       <div class="flex items-center justify-between mb-3">
+        <i data-lucide="flame" class="w-8 h-8 text-yellow-300"></i> <span class="text-xs font-bold text-yellow-300 bg-yellow-500/20 px-2 py-1 rounded-full">SEDANG</span>
+       </div><h3 class="font-display text-xl mb-1">Musisi</h3><p class="text-sm text-yellow-100/70">Alat musik &amp; nada</p><p class="text-xs text-yellow-300/60 mt-2">10 soal • 4 pilihan</p></button> <button data-difficulty="hard" class="difficulty-card bg-gradient-to-br from-red-500/20 to-pink-600/20 border-2 border-red-400/40 rounded-2xl p-6 text-left">
+       <div class="flex items-center justify-between mb-3">
+        <i data-lucide="zap" class="w-8 h-8 text-red-300"></i> <span class="text-xs font-bold text-red-300 bg-red-500/20 px-2 py-1 rounded-full">SULIT</span>
+       </div><h3 class="font-display text-xl mb-1">Maestro</h3><p class="text-sm text-red-100/70">Campuran + waktu singkat</p><p class="text-xs text-red-300/60 mt-2">12 soal • 4 pilihan</p></button>
+     </div>
+     <div class="bg-white/5 border border-white/10 rounded-xl p-4 text-sm text-purple-200/80 flex items-start gap-3">
+      <i data-lucide="lightbulb" class="w-5 h-5 text-yellow-300 flex-shrink-0 mt-0.5"></i>
+      <p><strong class="text-white">Tips:</strong> Putar volume ke tingkat yang nyaman. Gunakan headphone untuk pengalaman terbaik! Kamu bisa memutar ulang bunyi hingga 3 kali per soal.</p>
+     </div>
+    </section><!-- Game Screen -->
+    <section id="game-screen" class="hidden">
+     <!-- Stats Bar -->
+     <div class="grid grid-cols-4 gap-2 md:gap-4 mb-6">
+      <div class="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+       <div class="text-xs text-purple-300 mb-1">
+        SOAL
+       </div>
+       <div class="font-display text-lg md:text-xl"><span id="current-q">1</span>/<span id="total-q">10</span>
+       </div>
+      </div>
+      <div class="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+       <div class="text-xs text-purple-300 mb-1">
+        SKOR
+       </div>
+       <div id="score-display" class="font-display text-lg md:text-xl text-yellow-300">
+        0
+       </div>
+      </div>
+      <div class="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+       <div class="text-xs text-purple-300 mb-1">
+        STREAK
+       </div>
+       <div class="font-display text-lg md:text-xl flex items-center justify-center gap-1">
+        <span id="streak-display">0</span> <span id="streak-fire" class="hidden streak-fire">🔥</span>
+       </div>
+      </div>
+      <div class="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+       <div class="text-xs text-purple-300 mb-1">
+        WAKTU
+       </div>
+       <div id="timer-display" class="font-display text-lg md:text-xl text-blue-300">
+        --
+       </div>
+      </div>
+     </div><!-- Progress Bar -->
+     <div class="h-2 bg-white/10 rounded-full mb-6 overflow-hidden">
+      <div id="progress-bar" class="h-full bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 transition-all duration-500" style="width: 0%"></div>
+     </div><!-- Sound Player -->
+     <div class="bg-gradient-to-br from-purple-900/40 to-pink-900/40 border border-purple-400/30 rounded-3xl p-6 md:p-10 mb-6 text-center backdrop-blur-sm">
+      <div class="mb-6">
+       <span id="category-badge" class="level-badge inline-block text-xs px-3 py-1 rounded-full text-purple-200 mb-4">Kategori</span>
+       <h3 class="font-display text-xl md:text-2xl mb-6">Dengarkan bunyinya...</h3>
+      </div><!-- Wave Visualizer -->
+      <div id="wave-container" class="h-20 flex items-center justify-center mb-6">
+       <div class="wave-bar" style="height:8px"></div>
+       <div class="wave-bar" style="height:8px"></div>
+       <div class="wave-bar" style="height:8px"></div>
+       <div class="wave-bar" style="height:8px"></div>
+       <div class="wave-bar" style="height:8px"></div>
+       <div class="wave-bar" style="height:8px"></div>
+       <div class="wave-bar" style="height:8px"></div>
+       <div class="wave-bar" style="height:8px"></div>
+       <div class="wave-bar" style="height:8px"></div>
+       <div class="wave-bar" style="height:8px"></div>
+       <div class="wave-bar" style="height:8px"></div>
+       <div class="wave-bar" style="height:8px"></div>
+      </div><!-- Play Button --> <button id="play-btn" class="play-btn-glow w-24 h-24 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 flex items-center justify-center mx-auto transition-all"> <i data-lucide="play" class="w-12 h-12 md:w-14 md:h-14 text-white ml-1"></i> </button>
+      <p class="text-xs text-purple-300 mt-3">Putar tersisa: <span id="plays-left">3</span></p>
+     </div><!-- Options -->
+     <div id="options-grid" class="grid grid-cols-2 gap-3 md:gap-4"></div><!-- Feedback -->
+     <div id="feedback" class="hidden mt-6 p-4 rounded-xl text-center fade-in"></div>
+    </section><!-- Result Screen -->
+    <section id="result-screen" class="hidden text-center">
+     <div class="bg-gradient-to-br from-purple-900/40 to-pink-900/40 border border-purple-400/30 rounded-3xl p-8 md:p-12 backdrop-blur-sm">
+      <div id="result-icon" class="text-6xl md:text-7xl mb-4">
+       🏆
+      </div>
+      <h2 id="result-title" class="font-display text-3xl md:text-4xl mb-2 bg-gradient-to-r from-pink-400 to-yellow-400 bg-clip-text text-transparent">Luar Biasa!</h2>
+      <p id="result-subtitle" class="text-purple-200 mb-8">Kamu adalah Sound Master sejati!</p>
+      <div class="grid grid-cols-3 gap-4 mb-8">
+       <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div class="text-xs text-purple-300 mb-1">
+         SKOR AKHIR
+        </div>
+        <div id="final-score" class="font-display text-2xl md:text-3xl text-yellow-300">
+         0
+        </div>
+       </div>
+       <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div class="text-xs text-purple-300 mb-1">
+         BENAR
+        </div>
+        <div id="final-correct" class="font-display text-2xl md:text-3xl text-green-300">
+         0
+        </div>
+       </div>
+       <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div class="text-xs text-purple-300 mb-1">
+         AKURASI
+        </div>
+        <div id="final-accuracy" class="font-display text-2xl md:text-3xl text-blue-300">
+         0%
+        </div>
+       </div>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+       <button id="play-again-btn" class="px-6 py-3 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 font-semibold flex items-center justify-center gap-2 transition-all"> <i data-lucide="rotate-ccw" class="w-5 h-5"></i> Main Lagi </button> <button id="home-btn" class="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 font-semibold flex items-center justify-center gap-2 transition-all"> <i data-lucide="home" class="w-5 h-5"></i> Ke Beranda </button>
+      </div>
+     </div>
+    </section>
+   </div>
+  </div>
+  <script>
+  // ============ Element SDK ============
+  const defaultConfig = {};
+  window.elementSdk && window.elementSdk.init({
+    defaultConfig,
+    onConfigChange: async () => {},
+    mapToCapabilities: () => ({ recolorables: [], borderables: [], fontEditable: undefined, fontSizeable: undefined }),
+    mapToEditPanelValues: () => new Map()
+  });
+
+  lucide.createIcons();
+
+  // ============ Audio Engine (Web Audio API) ============
+  let audioCtx = null;
+  function getCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  // Enhanced audio with compressor for clarity
+  let masterGain = null;
+  let compressor = null;
+  
+  function setupAudioChain() {
+    const ctx = getCtx();
+    if (!masterGain) {
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0.7;
+      compressor = ctx.createDynamicsCompressor();
+      compressor.threshold.value = -24;
+      compressor.knee.value = 30;
+      compressor.ratio.value = 12;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.25;
+      masterGain.connect(compressor);
+      compressor.connect(ctx.destination);
+    }
+    return masterGain;
+  }
+
+  // Generic tone helper with better clarity
+  function playTone({freq, type='sine', duration=0.5, delay=0, vol=0.3, freqEnd=null, filterFreq=null}) {
+    const ctx = getCtx();
+    const chain = setupAudioChain();
+    const now = ctx.currentTime + delay;
+    
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const envelope = ctx.createGain();
+    
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, now);
+    if (freqEnd !== null) osc.frequency.exponentialRampToValueAtTime(Math.max(1, freqEnd), now + duration);
+    
+    gain.gain.value = vol;
+    
+    envelope.gain.setValueAtTime(0, now);
+    envelope.gain.linearRampToValueAtTime(1, now + 0.03);
+    envelope.gain.exponentialRampToValueAtTime(0.01, now + duration - 0.05);
+    envelope.gain.linearRampToValueAtTime(0, now + duration);
+
+    let node = osc;
+    if (filterFreq) {
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = filterFreq;
+      filter.Q.value = 1;
+      osc.connect(filter);
+      filter.connect(gain);
+    } else {
+      osc.connect(gain);
+    }
+    gain.connect(envelope);
+    envelope.connect(chain);
+    
+    osc.start(now);
+    osc.stop(now + duration + 0.05);
+  }
+
+  function playNoise({duration=0.5, delay=0, vol=0.2, filterFreq=1000, filterType='lowpass'}) {
+    const ctx = getCtx();
+    const chain = setupAudioChain();
+    const now = ctx.currentTime + delay;
+    
+    const bufferSize = ctx.sampleRate * duration;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    
+    // Better noise generation
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    
+    const filter = ctx.createBiquadFilter();
+    filter.type = filterType;
+    filter.frequency.value = filterFreq;
+    filter.Q.value = 0.5;
+    
+    const gain = ctx.createGain();
+    gain.gain.value = vol;
+    
+    const envelope = ctx.createGain();
+    envelope.gain.setValueAtTime(0, now);
+    envelope.gain.linearRampToValueAtTime(1, now + 0.02);
+    envelope.gain.exponentialRampToValueAtTime(0.01, now + duration - 0.05);
+    envelope.gain.linearRampToValueAtTime(0, now + duration);
+    
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(envelope);
+    envelope.connect(chain);
+    
+    noise.start(now);
+    noise.stop(now + duration + 0.05);
+  }
+
+  // ============ Sound Library (Enhanced) ============
+  const SOUNDS = {
+    // ---- EASY: Animals & Nature ----
+    cat: { name: 'Kucing', emoji: '🐱', category: 'Hewan', difficulty: 'easy', play() {
+      playTone({freq: 1200, freqEnd: 800, duration: 0.35, type: 'sine', vol: 0.25, filterFreq: 2500});
+      playTone({freq: 1100, freqEnd: 700, duration: 0.4, delay: 0.35, type: 'sine', vol: 0.25, filterFreq: 2500});
+    }},
+    dog: { name: 'Anjing', emoji: '🐶', category: 'Hewan', difficulty: 'easy', play() {
+      for (let i = 0; i < 4; i++) {
+        playTone({freq: 400, freqEnd: 200, duration: 0.2, delay: i * 0.28, type: 'square', vol: 0.3});
+        playNoise({duration: 0.1, delay: i * 0.28 + 0.05, vol: 0.15, filterFreq: 1200});
+      }
+    }},
+    cow: { name: 'Sapi', emoji: '🐄', category: 'Hewan', difficulty: 'easy', play() {
+      playTone({freq: 150, freqEnd: 100, duration: 1.5, type: 'sine', vol: 0.3, filterFreq: 800});
+    }},
+    pig: { name: 'Babi', emoji: '🐷', category: 'Hewan', difficulty: 'easy', play() {
+      for (let i = 0; i < 3; i++) {
+        playNoise({duration: 0.15, delay: i * 0.3, vol: 0.2, filterFreq: 3000, filterType: 'bandpass'});
+      }
+    }},
+    bird: { name: 'Burung', emoji: '🐦', category: 'Hewan', difficulty: 'easy', play() {
+      for (let i = 0; i < 5; i++) {
+        playTone({freq: 2200 + Math.random() * 1200, freqEnd: 1600, duration: 0.12, delay: i * 0.15, type: 'sine', vol: 0.2});
+      }
+    }},
+    frog: { name: 'Katak', emoji: '🐸', category: 'Hewan', difficulty: 'easy', play() {
+      for (let i = 0; i < 3; i++) {
+        playTone({freq: 180, freqEnd: 120, duration: 0.25, delay: i * 0.4, type: 'square', vol: 0.3, filterFreq: 500});
+      }
+    }},
+    snake: { name: 'Ular', emoji: '🐍', category: 'Hewan', difficulty: 'easy', play() {
+      playNoise({duration: 0.6, vol: 0.2, filterFreq: 2000, filterType: 'bandpass'});
+    }},
+    lion: { name: 'Singa', emoji: '🦁', category: 'Hewan', difficulty: 'easy', play() {
+      playTone({freq: 200, duration: 0.8, type: 'square', vol: 0.35, filterFreq: 1000});
+      playNoise({duration: 0.5, delay: 0.3, vol: 0.2, filterFreq: 800});
+    }},
+    rain: { name: 'Hujan', emoji: '🌧️', category: 'Alam', difficulty: 'easy', play() {
+      playNoise({duration: 2.2, vol: 0.18, filterFreq: 5000, filterType: 'highpass'});
+    }},
+    thunder: { name: 'Petir', emoji: '⚡', category: 'Alam', difficulty: 'easy', play() {
+      playNoise({duration: 1.8, vol: 0.4, filterFreq: 300, filterType: 'lowpass'});
+      playTone({freq: 50, duration: 1.5, type: 'sine', vol: 0.3, delay: 0.1});
+    }},
+    wind: { name: 'Angin', emoji: '💨', category: 'Alam', difficulty: 'easy', play() {
+      playNoise({duration: 1.5, vol: 0.2, filterFreq: 2000, filterType: 'bandpass'});
+    }},
+    ocean: { name: 'Ombak Laut', emoji: '🌊', category: 'Alam', difficulty: 'easy', play() {
+      playNoise({duration: 1.6, vol: 0.22, filterFreq: 800});
+      playNoise({duration: 1.3, delay: 1.4, vol: 0.2, filterFreq: 700});
+    }},
+
+    // ---- MEDIUM: Instruments ----
+    piano: { name: 'Piano', emoji: '🎹', category: 'Alat Musik', difficulty: 'medium', play() {
+      const notes = [523.25, 659.25, 783.99];
+      notes.forEach((f, i) => {
+        playTone({freq: f, duration: 0.9, delay: i * 0.3, type: 'sine', vol: 0.25, filterFreq: 3500});
+      });
+    }},
+    guitar: { name: 'Gitar', emoji: '🎸', category: 'Alat Musik', difficulty: 'medium', play() {
+      const notes = [196, 246.94, 293.66, 392];
+      notes.forEach((f, i) => {
+        playTone({freq: f, duration: 1.1, delay: i * 0.12, type: 'triangle', vol: 0.2, filterFreq: 2000});
+      });
+    }},
+    drum: { name: 'Drum', emoji: '🥁', category: 'Alat Musik', difficulty: 'medium', play() {
+      for (let i = 0; i < 4; i++) {
+        playTone({freq: 120, freqEnd: 50, duration: 0.18, delay: i * 0.35, type: 'sine', vol: 0.45});
+        playNoise({duration: 0.08, delay: i * 0.35, vol: 0.2, filterFreq: 6000, filterType: 'highpass'});
+      }
+    }},
+    violin: { name: 'Biola', emoji: '🎻', category: 'Alat Musik', difficulty: 'medium', play() {
+      playTone({freq: 440, duration: 0.6, type: 'sawtooth', vol: 0.15, filterFreq: 3000});
+      playTone({freq: 554.37, duration: 0.6, delay: 0.6, type: 'sawtooth', vol: 0.15, filterFreq: 3000});
+      playTone({freq: 659.25, duration: 1.2, delay: 1.2, type: 'sawtooth', vol: 0.15, filterFreq: 3000});
+    }},
+    flute: { name: 'Seruling', emoji: '🪈', category: 'Alat Musik', difficulty: 'medium', play() {
+      const notes = [523.25, 587.33, 659.25, 783.99];
+      notes.forEach((f, i) => {
+        playTone({freq: f, duration: 0.45, delay: i * 0.35, type: 'sine', vol: 0.25});
+      });
+    }},
+    trumpet: { name: 'Terompet', emoji: '🎺', category: 'Alat Musik', difficulty: 'medium', play() {
+      playTone({freq: 261.63, duration: 0.35, type: 'square', vol: 0.2, filterFreq: 2200});
+      playTone({freq: 329.63, duration: 0.35, delay: 0.35, type: 'square', vol: 0.2, filterFreq: 2200});
+      playTone({freq: 392, duration: 0.9, delay: 0.7, type: 'square', vol: 0.2, filterFreq: 2200});
+    }},
+    xylophone: { name: 'Xylofon', emoji: '🎵', category: 'Alat Musik', difficulty: 'medium', play() {
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((f, i) => {
+        playTone({freq: f, duration: 0.55, delay: i * 0.2, type: 'sine', vol: 0.25, filterFreq: 4500});
+      });
+    }},
+    bell: { name: 'Lonceng', emoji: '🔔', category: 'Alat Musik', difficulty: 'medium', play() {
+      playTone({freq: 1046.5, duration: 1.8, type: 'sine', vol: 0.25});
+      playTone({freq: 2093, duration: 1.8, type: 'sine', vol: 0.12});
+    }},
+    harp: { name: 'Harpa', emoji: '🎼', category: 'Alat Musik', difficulty: 'medium', play() {
+      const notes = [261.63, 329.63, 392, 523.25, 659.25, 783.99];
+      notes.forEach((f, i) => {
+        playTone({freq: f, duration: 1.3, delay: i * 0.12, type: 'sine', vol: 0.15});
+      });
+    }},
+    saxophone: { name: 'Saksofon', emoji: '🎷', category: 'Alat Musik', difficulty: 'medium', play() {
+      playTone({freq: 349.23, duration: 0.6, type: 'square', vol: 0.2, filterFreq: 1500});
+      playTone({freq: 440, duration: 0.6, delay: 0.6, type: 'square', vol: 0.2, filterFreq: 1500});
+      playTone({freq: 392, duration: 1, delay: 1.2, type: 'square', vol: 0.2, filterFreq: 1500});
+    }},
+    tambourine: { name: 'Gendang', emoji: '🎶', category: 'Alat Musik', difficulty: 'medium', play() {
+      for (let i = 0; i < 5; i++) {
+        playTone({freq: 200, freqEnd: 150, duration: 0.1, delay: i * 0.25, type: 'sine', vol: 0.25});
+        playNoise({duration: 0.08, delay: i * 0.25, vol: 0.15, filterFreq: 4000, filterType: 'bandpass'});
+      }
+    }},
+
+    // ---- HARD: Tricky sounds ----
+    alarm: { name: 'Alarm', emoji: '⏰', category: 'Benda', difficulty: 'hard', play() {
+      for (let i = 0; i < 6; i++) {
+        playTone({freq: 880, duration: 0.15, delay: i * 0.2, type: 'square', vol: 0.25});
+      }
+    }},
+    phone_ring: { name: 'Telepon Berdering', emoji: '📞', category: 'Benda', difficulty: 'hard', play() {
+      for (let i = 0; i < 3; i++) {
+        playTone({freq: 480, duration: 0.35, delay: i * 0.9, type: 'sine', vol: 0.25});
+        playTone({freq: 620, duration: 0.35, delay: i * 0.9, type: 'sine', vol: 0.25});
+      }
+    }},
+    doorbell: { name: 'Bel Pintu', emoji: '🚪', category: 'Benda', difficulty: 'hard', play() {
+      playTone({freq: 659.25, duration: 0.6, type: 'sine', vol: 0.3});
+      playTone({freq: 523.25, duration: 1, delay: 0.6, type: 'sine', vol: 0.3});
+    }},
+    heartbeat: { name: 'Detak Jantung', emoji: '❤️', category: 'Tubuh', difficulty: 'hard', play() {
+      for (let i = 0; i < 3; i++) {
+        playTone({freq: 100, freqEnd: 50, duration: 0.12, delay: i * 0.9, type: 'sine', vol: 0.45});
+        playTone({freq: 80, freqEnd: 40, duration: 0.18, delay: i * 0.9 + 0.2, type: 'sine', vol: 0.4});
+      }
+    }},
+    whistle: { name: 'Peluit', emoji: '😗', category: 'Lainnya', difficulty: 'hard', play() {
+      playTone({freq: 2000, duration: 0.18, type: 'sine', vol: 0.2});
+      playTone({freq: 2500, duration: 0.4, delay: 0.18, type: 'sine', vol: 0.2});
+      playTone({freq: 2000, duration: 0.18, delay: 0.58, type: 'sine', vol: 0.2});
+    }},
+    clap: { name: 'Tepuk Tangan', emoji: '👏', category: 'Tubuh', difficulty: 'hard', play() {
+      for (let i = 0; i < 4; i++) {
+        playNoise({duration: 0.1, delay: i * 0.28, vol: 0.3, filterFreq: 3500, filterType: 'bandpass'});
+      }
+    }},
+    siren: { name: 'Sirine', emoji: '🚨', category: 'Benda', difficulty: 'hard', play() {
+      for (let i = 0; i < 2; i++) {
+        playTone({freq: 500, freqEnd: 1100, duration: 0.7, delay: i * 1.4, type: 'sine', vol: 0.25});
+        playTone({freq: 1100, freqEnd: 500, duration: 0.7, delay: i * 1.4 + 0.7, type: 'sine', vol: 0.25});
+      }
+    }},
+    clock_tick: { name: 'Jam Dinding', emoji: '🕐', category: 'Benda', difficulty: 'hard', play() {
+      for (let i = 0; i < 8; i++) {
+        playTone({freq: i % 2 === 0 ? 900 : 650, duration: 0.05, delay: i * 0.55, type: 'square', vol: 0.25});
+      }
+    }},
+    laugh: { name: 'Tawa Manusia', emoji: '😄', category: 'Tubuh', difficulty: 'hard', play() {
+      playNoise({duration: 0.3, vol: 0.2, filterFreq: 2000, filterType: 'bandpass'});
+      playNoise({duration: 0.25, delay: 0.35, vol: 0.22, filterFreq: 2200, filterType: 'bandpass'});
+      playNoise({duration: 0.2, delay: 0.65, vol: 0.2, filterFreq: 1800, filterType: 'bandpass'});
+    }},
+    footstep: { name: 'Langkah Kaki', emoji: '👣', category: 'Tubuh', difficulty: 'hard', play() {
+      for (let i = 0; i < 4; i++) {
+        playTone({freq: 150, freqEnd: 100, duration: 0.12, delay: i * 0.35, type: 'sine', vol: 0.3});
+        playNoise({duration: 0.08, delay: i * 0.35, vol: 0.15, filterFreq: 1500, filterType: 'bandpass'});
+      }
+    }},
+    paper_tear: { name: 'Kertas Robek', emoji: '📄', category: 'Benda', difficulty: 'hard', play() {
+      playNoise({duration: 0.4, vol: 0.25, filterFreq: 4000, filterType: 'bandpass'});
+    }},
+    door_knock: { name: 'Ketukan Pintu', emoji: '🚪', category: 'Benda', difficulty: 'hard', play() {
+      for (let i = 0; i < 3; i++) {
+        playTone({freq: 150, freqEnd: 120, duration: 0.1, delay: i * 0.35, type: 'sine', vol: 0.35});
+        playNoise({duration: 0.08, delay: i * 0.35, vol: 0.15, filterFreq: 1000});
+      }
+    }}
+  };
+
+  // ============ Game State ============
+  const state = {
+    difficulty: 'easy',
+    questions: [],
+    currentIdx: 0,
+    score: 0,
+    correct: 0,
+    streak: 0,
+    playsLeft: 3,
+    timer: null,
+    timeLeft: 0,
+    answered: false
+  };
+
+  const DIFFICULTY_CONFIG = {
+    easy: { count: 10, options: 3, time: 0, pointsPerCorrect: 10, pool: ['cat','dog','cow','pig','bird','frog','snake','lion','rain','thunder','wind','ocean'] },
+    medium: { count: 11, options: 4, time: 0, pointsPerCorrect: 15, pool: ['piano','guitar','drum','violin','flute','trumpet','xylophone','bell','harp','saxophone','tambourine'] },
+    hard: { count: 14, options: 4, time: 8, pointsPerCorrect: 20, pool: ['alarm','phone_ring','doorbell','heartbeat','whistle','clap','siren','clock_tick','laugh','footstep','paper_tear','door_knock','cat','dog','bird'] }
+  };
+
+  // ============ Game Logic ============
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function buildQuestions(difficulty) {
+    const cfg = DIFFICULTY_CONFIG[difficulty];
+    const pool = cfg.pool;
+    const selected = shuffle(pool).slice(0, Math.min(cfg.count, pool.length));
+
+    return selected.map(key => {
+      const wrongs = shuffle(pool.filter(k => k !== key)).slice(0, cfg.options - 1);
+      const options = shuffle([key, ...wrongs]);
+      return { correct: key, options };
+    });
+  }
+
+  function startGame(difficulty) {
+    state.difficulty = difficulty;
+    state.questions = buildQuestions(difficulty);
+    state.currentIdx = 0;
+    state.score = 0;
+    state.correct = 0;
+    state.streak = 0;
+
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('result-screen').classList.add('hidden');
+    document.getElementById('game-screen').classList.remove('hidden');
+    document.getElementById('total-q').textContent = state.questions.length;
+
+    loadQuestion();
+  }
+
+  function loadQuestion() {
+    if (state.currentIdx >= state.questions.length) {
+      endGame();
+      return;
+    }
+
+    state.answered = false;
+    state.playsLeft = 3;
+    const q = state.questions[state.currentIdx];
+    const sound = SOUNDS[q.correct];
+
+    // Update UI
+    document.getElementById('current-q').textContent = state.currentIdx + 1;
+    document.getElementById('score-display').textContent = state.score;
+    document.getElementById('streak-display').textContent = state.streak;
+    document.getElementById('streak-fire').classList.toggle('hidden', state.streak < 3);
+    document.getElementById('plays-left').textContent = state.playsLeft;
+    document.getElementById('category-badge').textContent = sound.category;
+    document.getElementById('progress-bar').style.width = `${(state.currentIdx / state.questions.length) * 100}%`;
+    document.getElementById('feedback').classList.add('hidden');
+
+    // Reset play button
+    const playBtn = document.getElementById('play-btn');
+    playBtn.disabled = false;
+    playBtn.classList.add('play-btn-glow');
+    playBtn.innerHTML = '<i data-lucide="play" class="w-12 h-12 md:w-14 md:h-14 text-white ml-1"></i>';
+
+    // Build options
+    const grid = document.getElementById('options-grid');
+    grid.innerHTML = '';
+    q.options.forEach(key => {
+      const s = SOUNDS[key];
+      const btn = document.createElement('button');
+      btn.className = 'option-btn bg-white/10 border-2 border-white/20 rounded-2xl p-4 md:p-5 text-left flex items-center gap-3';
+      btn.innerHTML = `
+        <span class="text-3xl md:text-4xl">${s.emoji}</span>
+        <span class="font-display text-base md:text-lg">${s.name}</span>
+      `;
+      btn.addEventListener('click', () => handleAnswer(key, btn));
+      grid.appendChild(btn);
+    });
+
+    lucide.createIcons();
+
+    // Timer for hard mode
+    const cfg = DIFFICULTY_CONFIG[state.difficulty];
+    if (cfg.time > 0) {
+      state.timeLeft = cfg.time;
+      document.getElementById('timer-display').textContent = state.timeLeft + 's';
+      document.getElementById('timer-display').classList.remove('text-red-400');
+      document.getElementById('timer-display').classList.add('text-blue-300');
+
+      clearInterval(state.timer);
+      state.timer = setInterval(() => {
+        state.timeLeft--;
+        const td = document.getElementById('timer-display');
+        td.textContent = state.timeLeft + 's';
+        if (state.timeLeft <= 3) {
+          td.classList.remove('text-blue-300');
+          td.classList.add('text-red-400');
+        }
+        if (state.timeLeft <= 0) {
+          clearInterval(state.timer);
+          if (!state.answered) handleAnswer(null, null); // time out
+        }
+      }, 1000);
+    } else {
+      document.getElementById('timer-display').textContent = '∞';
+    }
+
+    // Auto play first time
+    setTimeout(() => playCurrentSound(), 400);
+  }
+
+  function animateWave(playing) {
+    document.querySelectorAll('.wave-bar').forEach((bar, i) => {
+      if (playing) {
+        bar.classList.add('playing');
+        bar.style.animationDelay = (i * 0.05) + 's';
+      } else {
+        bar.classList.remove('playing');
+        bar.style.height = '8px';
+      }
+    });
+  }
+
+  function playCurrentSound() {
+    if (state.playsLeft <= 0 || state.answered) return;
+    const q = state.questions[state.currentIdx];
+    const sound = SOUNDS[q.correct];
+    sound.play();
+    state.playsLeft--;
+    document.getElementById('plays-left').textContent = state.playsLeft;
+
+    animateWave(true);
+    setTimeout(() => animateWave(false), 2500);
+
+    if (state.playsLeft <= 0) {
+      document.getElementById('play-btn').classList.remove('play-btn-glow');
+    }
+  }
+
+  function handleAnswer(selectedKey, btnEl) {
+    if (state.answered) return;
+    state.answered = true;
+    clearInterval(state.timer);
+
+    const q = state.questions[state.currentIdx];
+    const isCorrect = selectedKey === q.correct;
+    const cfg = DIFFICULTY_CONFIG[state.difficulty];
+
+    // Disable all option buttons & mark correct/wrong
+    document.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      const label = b.querySelector('.font-display').textContent;
+      if (label === SOUNDS[q.correct].name) b.classList.add('correct');
+    });
+    if (btnEl && !isCorrect) btnEl.classList.add('wrong');
+
+    // Disable play
+    const playBtn = document.getElementById('play-btn');
+    playBtn.disabled = true;
+    playBtn.classList.remove('play-btn-glow');
+
+    // Feedback
+    const fb = document.getElementById('feedback');
+    fb.classList.remove('hidden');
+    if (isCorrect) {
+      let pts = cfg.pointsPerCorrect;
+      // Streak bonus
+      state.streak++;
+      if (state.streak >= 3) pts += 5;
+      if (state.streak >= 5) pts += 5;
+      // Play count bonus (fewer plays = more points)
+      if (state.playsLeft === 2) pts += 3;
+      if (state.playsLeft === 1) pts += 1;
+
+      state.score += pts;
+      state.correct++;
+
+      fb.className = 'mt-6 p-4 rounded-xl text-center fade-in bg-green-500/20 border border-green-400/40';
+      fb.innerHTML = `<div class="font-display text-xl text-green-300 mb-1">✓ BENAR! +${pts} poin</div>
+        <div class="text-sm text-green-100/80">${state.streak >= 3 ? '🔥 Streak ' + state.streak + '!' : ''}</div>`;
+
+      playCorrectSfx();
+
+      const sd = document.getElementById('score-display');
+      sd.textContent = state.score;
+      sd.classList.add('score-pop');
+      setTimeout(() => sd.classList.remove('score-pop'), 500);
+
+      if (state.streak >= 3) spawnConfetti(20);
+    } else {
+      state.streak = 0;
+      fb.className = 'mt-6 p-4 rounded-xl text-center fade-in bg-red-500/20 border border-red-400/40';
+      const msg = selectedKey === null ? 'Waktu habis!' : 'Salah!';
+      fb.innerHTML = `<div class="font-display text-xl text-red-300 mb-1">✗ ${msg}</div>
+        <div class="text-sm text-red-100/80">Jawaban: <strong>${SOUNDS[q.correct].emoji} ${SOUNDS[q.correct].name}</strong></div>`;
+      playWrongSfx();
+    }
+
+    // Next button
+    setTimeout(() => {
+      fb.innerHTML += `<button id="next-btn" class="mt-3 px-6 py-2 rounded-full bg-white/20 hover:bg-white/30 font-semibold text-sm transition-all">
+        ${state.currentIdx + 1 >= state.questions.length ? 'Lihat Hasil →' : 'Soal Berikutnya →'}
+      </button>`;
+      document.getElementById('next-btn').addEventListener('click', () => {
+        state.currentIdx++;
+        loadQuestion();
+      });
+    }, 1200);
+  }
+
+  function playCorrectSfx() {
+    playTone({freq: 523.25, duration: 0.1, type: 'sine', vol: 0.2});
+    playTone({freq: 659.25, duration: 0.1, delay: 0.1, type: 'sine', vol: 0.2});
+    playTone({freq: 783.99, duration: 0.2, delay: 0.2, type: 'sine', vol: 0.2});
+  }
+  function playWrongSfx() {
+    playTone({freq: 200, freqEnd: 100, duration: 0.3, type: 'sawtooth', vol: 0.2});
+  }
+
+  function spawnConfetti(count) {
+    const colors = ['#f472b6', '#a78bfa', '#60a5fa', '#fbbf24', '#34d399'];
+    for (let i = 0; i < count; i++) {
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.left = Math.random() * 100 + '%';
+      c.style.background = colors[Math.floor(Math.random() * colors.length)];
+      c.style.animationDuration = (2 + Math.random() * 2) + 's';
+      c.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 4000);
+    }
+  }
+
+  function endGame() {
+    clearInterval(state.timer);
+    document.getElementById('game-screen').classList.add('hidden');
+    document.getElementById('result-screen').classList.remove('hidden');
+
+    const total = state.questions.length;
+    const acc = Math.round((state.correct / total) * 100);
+
+    document.getElementById('final-score').textContent = state.score;
+    document.getElementById('final-correct').textContent = `${state.correct}/${total}`;
+    document.getElementById('final-accuracy').textContent = acc + '%';
+
+    let icon = '🎉', title = 'Hebat!', sub = 'Kerja bagus, teruskan!';
+    if (acc === 100) { icon = '🏆'; title = 'SEMPURNA!'; sub = 'Kamu adalah Sound Master sejati!'; spawnConfetti(60); }
+    else if (acc >= 80) { icon = '🌟'; title = 'Luar Biasa!'; sub = 'Telinga kamu sangat tajam!'; spawnConfetti(40); }
+    else if (acc >= 60) { icon = '👍'; title = 'Bagus!'; sub = 'Terus berlatih untuk jadi master!'; }
+    else if (acc >= 40) { icon = '💪'; title = 'Lumayan!'; sub = 'Coba lagi dan tingkatkan skormu!'; }
+    else { icon = '🎧'; title = 'Jangan Menyerah!'; sub = 'Setiap master pernah jadi pemula!'; }
+
+    document.getElementById('result-icon').textContent = icon;
+    document.getElementById('result-title').textContent = title;
+    document.getElementById('result-subtitle').textContent = sub;
+
+    lucide.createIcons();
+  }
+
+  // ============ Event Listeners ============
+  document.querySelectorAll('[data-difficulty]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      getCtx(); // unlock audio on user gesture
+      startGame(btn.dataset.difficulty);
+    });
+  });
+
+  document.getElementById('play-btn').addEventListener('click', playCurrentSound);
+
+  document.getElementById('play-again-btn').addEventListener('click', () => {
+    startGame(state.difficulty);
+  });
+
+  document.getElementById('home-btn').addEventListener('click', () => {
+    document.getElementById('result-screen').classList.add('hidden');
+    document.getElementById('game-screen').classList.add('hidden');
+    document.getElementById('start-screen').classList.remove('hidden');
+  });
+</script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f1413cf4057fe19',t:'MTc3NzAyMjkwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
