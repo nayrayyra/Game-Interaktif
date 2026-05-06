@@ -1,2 +1,0 @@
-# Game-Interaktif
-Media pembelajaran
